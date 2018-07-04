@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -19,12 +20,18 @@ import com.marbola.excel.exception.EntityNotValidException;
 
 public class ExcelReaderImpl<T>  {
 
-	Class<T> clazz; 
-	Field[] fields;
+	private Class<T> clazz; 
+	private Field[] fields;
 	
-	public ExcelReaderImpl(Class<T> clazz) throws EntityNotValidException {
-		
+	private String excelFile;
+	private int indexHeader;
+	private String sheetName;
+	
+	public ExcelReaderImpl(Class<T> clazz, String excelFile,int indexHeader,String sheetName) throws Exception {
+		this.excelFile = excelFile;
 		this.clazz = clazz;
+		this.indexHeader = indexHeader;
+		this.sheetName = sheetName;
 		
 		if(!clazz.isAnnotationPresent(ExcelEntity.class)) {
 			throw new EntityNotValidException("Check ["+clazz.getName()+"] class.");
@@ -47,17 +54,16 @@ public class ExcelReaderImpl<T>  {
 		
 	}
 	
-	public List<T> readRows(String excelFile) throws Exception {
-		return this.readRows(excelFile,0,"Sheet1");
+	public ExcelReaderImpl(Class<T> clazz, String excelFile) throws Exception {
+		this(clazz, excelFile, 0, "Sheet1");
 	}
 	
-	public List<T> readRows(String excelFile,int indexHeader,String sheetName) throws Exception {
+	public List<T> readRows() throws Exception {
 		ArrayList<T> list = new ArrayList<T>();
 		
 		Workbook wb = WorkbookFactory.create(new File(excelFile));
 
 	    Sheet sheet = wb.getSheet(sheetName);
-		// RETRIVE HEADER POSITIONS
 	    
 	    Row header = sheet.getRow(indexHeader);
 	   
@@ -73,6 +79,85 @@ public class ExcelReaderImpl<T>  {
 		return list;
 	}
 	
+	public T readRow(int rowIndex,Row header) throws Exception {
+		Workbook wb = WorkbookFactory.create(new File(excelFile));
+	    Sheet sheet = wb.getSheet(sheetName);
+		return this.readRow(sheet.getRow(rowIndex),header);
+	}
+	
+	public T readRow(int rowIndex,int headerIndex) throws Exception {
+		Workbook wb = WorkbookFactory.create(new File(excelFile));
+	    Sheet sheet = wb.getSheet(sheetName);
+		Row header = sheet.getRow(headerIndex);
+		return this.readRow(rowIndex,header);
+	}
+	
+	public T readRow(Row row,Row header) throws Exception {
+		T rowInstance = clazz.newInstance();
+	    
+		for (Cell currentCell : row) {
+			Cell cell = header.getCell(currentCell.getColumnIndex());
+			String headerForIndex = cell.getStringCellValue().trim();
+			
+			for (Field field : fields) {
+				
+				if(field.getName().equals(headerForIndex)){
+
+					boolean accessible = field.isAccessible();
+					
+					field.setAccessible(true);
+					
+					field.set(rowInstance,  getCellGenericValue(currentCell,field.getType()));
+					
+					field.setAccessible(accessible);
+					
+					break;
+				}
+			}
+		}
+		
+		return rowInstance;
+	}
+	
+	@SuppressWarnings({ "hiding", "unchecked" })
+	private <T> T getCellGenericValue(Cell cell, Class<T> clazz) {
+		
+		T result = null; 
+		int cellType = cell.getCellType();
+
+		switch (cellType) {
+			case Cell.CELL_TYPE_STRING:{
+			    	result = (T) cell.getStringCellValue();
+				break;
+			}
+			case Cell.CELL_TYPE_BOOLEAN:{
+				result = (T) new Boolean(cell.getBooleanCellValue());
+				break;
+			}
+			case Cell.CELL_TYPE_ERROR:{
+				result = (T) new Byte(cell.getErrorCellValue());
+				break;
+			}
+			case Cell.CELL_TYPE_FORMULA:{
+				result = (T) cell.getCellFormula();
+				break;
+			}
+			case Cell.CELL_TYPE_NUMERIC:{
+				if (HSSFDateUtil.isCellDateFormatted(cell)) {
+					System.out.println("HSSFDateUtil.isCellDateFormatted");
+//					return (T) cell.getDateCellValue();
+				}
+				result = (T) new Double(cell.getNumericCellValue());
+				break;
+			}
+			default:{
+				break;
+			}
+		}
+		
+		return result;
+	}
+
 	private boolean checkIfRowIsEmpty(Row row) {
 	    if (row == null) {
 	        return true;
@@ -88,36 +173,4 @@ public class ExcelReaderImpl<T>  {
 	    }
 	    return true;
 	}
-//	TODO
-//	public T readRow(int rowIndex,Row header) throws InstantiationException, IllegalAccessException {
-//		this.readRow(sheet.getRow(rowIndex),header)
-//	}
-	
-	public T readRow(Row row,Row header) throws InstantiationException, IllegalAccessException {
-		T rowInstance = clazz.newInstance();
-	    
-		for (Cell currentCell : row) {
-			Cell cell = header.getCell(currentCell.getColumnIndex());
-			String headerForIndex = cell.getStringCellValue().trim();
-			
-			for (Field field : fields) {
-				
-				if(field.getName().equals(headerForIndex)){
-
-					boolean accessible = field.isAccessible();
-					
-					field.setAccessible(true);
-
-					field.set(rowInstance, currentCell.getStringCellValue());
-					
-					field.setAccessible(accessible);
-					
-					break;
-				}
-			}
-		}
-		
-		return rowInstance;
-	}
-
 }
