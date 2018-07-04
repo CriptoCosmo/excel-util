@@ -41,7 +41,7 @@ public class ExcelRow {
 
 ### Example Excel File 
 
-![Example Excel File](.\images\excel.png)
+![Example Excel File](.//images//excel.png)
 
 ### Result 
 
