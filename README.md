@@ -68,6 +68,6 @@ public static void main(String[] args) throws Exception {
 ### Result 
 
 ```log
-ExcelRow [nome=Mario, cognome=Arbola, classe=Quinta, data=19 Luglio 1996] 
+ExcelRow [nome=Mario, cognome=Arbola, classe=5.0, data=Fri Jul 19 00:00:00 CEST 1996, data2=Fri Jan 19 00:00:00 CET 1900]
 ```
 
