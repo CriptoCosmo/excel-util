@@ -9,4 +9,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ExcelField {
 	String value() default "N/A";
+	String locale() default "en";
 }
