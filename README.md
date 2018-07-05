@@ -67,7 +67,8 @@ public static void main(String[] args) throws Exception {
 ```
 ### Result 
 
-```log
+```shell
 ExcelRow [nome=Mario, cognome=Arbola, classe=5.0, data=Fri Jul 19 00:00:00 CEST 1996, data2=Fri Jan 19 00:00:00 CET 1900]
-```
 
+ExcelRow [nome=Gabriele, cognome=Cipolloni, classe=5.0, data=Sat Nov 11 00:00:00 CET 1995, data2=Fri Jan 19 00:00:00 CET 1900]
+```
